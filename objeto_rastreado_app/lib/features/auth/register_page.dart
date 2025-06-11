@@ -1,61 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
-import 'register_page.dart';
-import 'forgot_password_page.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({Key? key}) : super(key: key);
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
-  bool _rememberMe = false;
+  bool _isConfirmPasswordVisible = false;
+  bool _acceptedTerms = false;
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
-    if (_formKey.currentState!.validate()) {
+  Future<void> _handleRegister() async {
+    if (_formKey.currentState!.validate() && _acceptedTerms) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final success = await authProvider.login(
+      final success = await authProvider.register(
         _emailController.text,
         _passwordController.text,
+        _nameController.text,
       );
 
-      if (mounted && !success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Email ou senha inválidos'),
-            backgroundColor: Colors.red,
-          ),
-        );
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Registro realizado com sucesso!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context); // Volta para a tela de login
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Erro ao realizar registro. Tente novamente.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
+    } else if (!_acceptedTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Você precisa aceitar os termos e condições'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
-  }
-
-  void _navigateToRegister() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const RegisterPage()),
-    );
-  }
-
-  void _navigateToForgotPassword() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
-    );
   }
 
   @override
@@ -71,17 +78,15 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo ou Ícone
+                  // Ícone e Título
                   Icon(
-                    Icons.location_on,
+                    Icons.person_add,
                     size: 80,
                     color: Theme.of(context).primaryColor,
                   ),
                   const SizedBox(height: 24),
-
-                  // Título
                   Text(
-                    'Bem-vindo de volta!',
+                    'Criar Conta',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           color: Theme.of(context).primaryColor,
                           fontWeight: FontWeight.bold,
@@ -89,18 +94,37 @@ class _LoginPageState extends State<LoginPage> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-
-                  // Subtítulo
                   Text(
-                    'Faça login para continuar',
+                    'Preencha seus dados para começar',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Colors.grey[600],
                         ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 32),
 
-                  // Campo de Email
+                  // Campo Nome
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nome completo',
+                      prefixIcon: Icon(Icons.person_outline),
+                      hintText: 'Digite seu nome completo',
+                    ),
+                    textInputAction: TextInputAction.next,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor, insira seu nome';
+                      }
+                      if (value.split(' ').length < 2) {
+                        return 'Por favor, insira seu nome completo';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Campo Email
                   TextFormField(
                     controller: _emailController,
                     decoration: const InputDecoration(
@@ -122,7 +146,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Campo de Senha
+                  // Campo Senha
                   TextFormField(
                     controller: _passwordController,
                     decoration: InputDecoration(
@@ -143,6 +167,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     obscureText: !_isPasswordVisible,
+                    textInputAction: TextInputAction.next,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Por favor, insira sua senha';
@@ -155,40 +180,75 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Lembrar-me e Esqueci a senha
+                  // Campo Confirmar Senha
+                  TextFormField(
+                    controller: _confirmPasswordController,
+                    decoration: InputDecoration(
+                      labelText: 'Confirmar Senha',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      hintText: 'Confirme sua senha',
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isConfirmPasswordVisible
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isConfirmPasswordVisible =
+                                !_isConfirmPasswordVisible;
+                          });
+                        },
+                      ),
+                    ),
+                    obscureText: !_isConfirmPasswordVisible,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor, confirme sua senha';
+                      }
+                      if (value != _passwordController.text) {
+                        return 'As senhas não coincidem';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Checkbox Termos
                   Row(
                     children: [
-                      // Checkbox "Lembrar-me"
-                      Row(
-                        children: [
-                          Checkbox(
-                            value: _rememberMe,
-                            onChanged: (value) {
-                              setState(() {
-                                _rememberMe = value ?? false;
-                              });
-                            },
-                          ),
-                          const Text('Lembrar-me'),
-                        ],
+                      Checkbox(
+                        value: _acceptedTerms,
+                        onChanged: (value) {
+                          setState(() {
+                            _acceptedTerms = value ?? false;
+                          });
+                        },
                       ),
-                      const Spacer(),
-                      // Link "Esqueci a senha"
-                      TextButton(
-                        onPressed: _navigateToForgotPassword,
-                        child: const Text('Esqueci a senha'),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _acceptedTerms = !_acceptedTerms;
+                            });
+                          },
+                          child: Text(
+                            'Li e aceito os termos de uso e política de privacidade',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
 
-                  // Botão de Login
+                  // Botão Registrar
                   Consumer<AuthProvider>(
                     builder: (context, auth, child) {
                       return SizedBox(
                         height: 50,
                         child: ElevatedButton(
-                          onPressed: auth.isLoading ? null : _handleLogin,
+                          onPressed: auth.isLoading ? null : _handleRegister,
                           child: auth.isLoading
                               ? const SizedBox(
                                   height: 20,
@@ -200,7 +260,7 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                 )
                               : const Text(
-                                  'Entrar',
+                                  'Criar Conta',
                                   style: TextStyle(fontSize: 18),
                                 ),
                         ),
@@ -209,100 +269,22 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Divisor "ou"
-                  Row(
-                    children: const [
-                      Expanded(child: Divider()),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Text('ou'),
-                      ),
-                      Expanded(child: Divider()),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Botões de login social
+                  // Link para Login
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _SocialLoginButton(
-                        icon: Icons.g_mobiledata,
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content:
-                                  Text('Login com Google em desenvolvimento'),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 16),
-                      _SocialLoginButton(
-                        icon: Icons.facebook,
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content:
-                                  Text('Login com Facebook em desenvolvimento'),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Link para cadastro
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('Não tem uma conta?'),
+                      const Text('Já tem uma conta?'),
                       TextButton(
-                        onPressed: _navigateToRegister,
-                        child: const Text('Cadastre-se'),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Fazer login'),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SocialLoginButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  const _SocialLoginButton({
-    Key? key,
-    required this.icon,
-    required this.onPressed,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).primaryColor.withOpacity(0.3),
-            ),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Icon(
-            icon,
-            size: 32,
-            color: Theme.of(context).primaryColor,
           ),
         ),
       ),
