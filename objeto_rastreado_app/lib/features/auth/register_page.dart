@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/widgets/rastreia_logo.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -78,13 +79,16 @@ class _RegisterPageState extends State<RegisterPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Ícone e Título
-                  Icon(
-                    Icons.person_add,
-                    size: 80,
-                    color: Theme.of(context).primaryColor,
+                  // Logo
+                  const Center(
+                    child: RastreiaLogo(
+                      size: 32,
+                      showIcon: true,
+                    ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 48),
+
+                  // Título
                   Text(
                     'Criar Conta',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(

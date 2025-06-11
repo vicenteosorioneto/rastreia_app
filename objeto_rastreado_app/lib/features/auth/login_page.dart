@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/widgets/rastreia_logo.dart';
 import 'register_page.dart';
 import 'forgot_password_page.dart';
 
@@ -71,13 +72,14 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo ou Ícone
-                  Icon(
-                    Icons.location_on,
-                    size: 80,
-                    color: Theme.of(context).primaryColor,
+                  // Logo
+                  const Center(
+                    child: RastreiaLogo(
+                      size: 32,
+                      showIcon: true,
+                    ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 48),
 
                   // Título
                   Text(

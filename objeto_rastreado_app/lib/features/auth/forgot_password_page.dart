@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/widgets/rastreia_logo.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({Key? key}) : super(key: key);
@@ -64,13 +65,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Ícone
-                  Icon(
-                    Icons.lock_reset,
-                    size: 80,
-                    color: Theme.of(context).primaryColor,
+                  // Logo
+                  const Center(
+                    child: RastreiaLogo(
+                      size: 32,
+                      showIcon: true,
+                    ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 48),
 
                   // Título
                   Text(
