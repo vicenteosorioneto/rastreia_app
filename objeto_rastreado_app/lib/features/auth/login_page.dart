@@ -125,12 +125,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const RegisterPage(),
-                          ),
-                        );
+                        Navigator.pushNamed(context, '/profile-selection');
                       },
                       child: const Text('Criar conta'),
                     ),

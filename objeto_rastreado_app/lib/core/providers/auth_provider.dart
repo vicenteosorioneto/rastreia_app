@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/user_type.dart';
 
 class AuthProvider extends ChangeNotifier {
   bool _isAuthenticated = false;
   String? _userEmail;
+  String? _userName;
+  UserType? _userType;
   final String _verificationCode = '123456';
   DateTime? _lastCodeSentTime;
   bool _isLoading = false;
 
   bool get isAuthenticated => _isAuthenticated;
   String? get userEmail => _userEmail;
+  String? get userName => _userName;
+  UserType? get userType => _userType;
   DateTime? get lastCodeSentTime => _lastCodeSentTime;
   bool get isLoading => _isLoading;
 
@@ -21,6 +26,13 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _checkSavedUser() async {
     final prefs = await SharedPreferences.getInstance();
     _userEmail = prefs.getString('user_email');
+    _userName = prefs.getString('user_name');
+    final userTypeString = prefs.getString('user_type');
+    if (userTypeString != null) {
+      _userType = UserType.values.firstWhere(
+        (type) => type.toString() == userTypeString,
+      );
+    }
     _isAuthenticated = _userEmail != null;
     notifyListeners();
   }
@@ -34,9 +46,22 @@ class AuthProvider extends ChangeNotifier {
       await Future.delayed(const Duration(seconds: 1));
       _userEmail = email;
       _isAuthenticated = true;
+
+      // TODO: Buscar dados do usuário do backend
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isAuthenticated', true);
-      await prefs.setString('userEmail', email);
+      await prefs.setString('user_email', email);
+
+      // Recuperar tipo de usuário salvo
+      final userTypeString = prefs.getString('user_type');
+      if (userTypeString != null) {
+        _userType = UserType.values.firstWhere(
+          (type) => type.toString() == userTypeString,
+        );
+      }
+
+      // Recuperar nome do usuário
+      _userName = prefs.getString('user_name');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -50,6 +75,8 @@ class AuthProvider extends ChangeNotifier {
     try {
       _isAuthenticated = false;
       _userEmail = null;
+      _userName = null;
+      _userType = null;
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
     } finally {
@@ -95,12 +122,36 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> startRegistration(String email, String password) async {
+  Future<bool> startRegistration(
+    String email,
+    String password, {
+    required String name,
+    required String cpf,
+    required UserType userType,
+    String? matricula,
+    String? unidade,
+  }) async {
     _isLoading = true;
     notifyListeners();
 
     try {
       _userEmail = email;
+      _userName = name;
+      _userType = userType;
+
+      // Salvar dados temporariamente
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('temp_email', email);
+      await prefs.setString('temp_name', name);
+      await prefs.setString('temp_cpf', cpf);
+      await prefs.setString('temp_user_type', userType.toString());
+      if (matricula != null) {
+        await prefs.setString('temp_matricula', matricula);
+      }
+      if (unidade != null) {
+        await prefs.setString('temp_unidade', unidade);
+      }
+
       await Future.delayed(const Duration(seconds: 1));
       return true;
     } finally {
@@ -115,10 +166,37 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       await Future.delayed(const Duration(seconds: 1));
-      _isAuthenticated = true;
+
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('userEmail', _userEmail!);
-      return true;
+
+      // Mover dados temporários para permanentes
+      final email = prefs.getString('temp_email');
+      final name = prefs.getString('temp_name');
+      final userTypeString = prefs.getString('temp_user_type');
+
+      if (email != null && name != null && userTypeString != null) {
+        await prefs.setString('user_email', email);
+        await prefs.setString('user_name', name);
+        await prefs.setString('user_type', userTypeString);
+
+        _userEmail = email;
+        _userName = name;
+        _userType = UserType.values.firstWhere(
+          (type) => type.toString() == userTypeString,
+        );
+        _isAuthenticated = true;
+
+        // Limpar dados temporários
+        await prefs.remove('temp_email');
+        await prefs.remove('temp_name');
+        await prefs.remove('temp_cpf');
+        await prefs.remove('temp_user_type');
+        await prefs.remove('temp_matricula');
+        await prefs.remove('temp_unidade');
+
+        return true;
+      }
+      return false;
     } finally {
       _isLoading = false;
       notifyListeners();

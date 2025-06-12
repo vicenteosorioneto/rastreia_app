@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/login_page.dart';
+import 'features/auth/profile_selection_page.dart';
 import 'features/home/home_page.dart';
 
 void main() {
@@ -25,6 +26,7 @@ class MyApp extends StatelessWidget {
           '/': (context) => const AuthWrapper(),
           '/login': (context) => const LoginPage(),
           '/home': (context) => const HomePage(),
+          '/profile-selection': (context) => const ProfileSelectionPage(),
         },
       ),
     );
