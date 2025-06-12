@@ -225,33 +225,18 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 24),
 
                   // Botões de login social
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _SocialLoginButton(
-                        icon: Icons.g_mobiledata,
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content:
-                                  Text('Login com Google em desenvolvimento'),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 16),
-                      _SocialLoginButton(
-                        icon: Icons.facebook,
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content:
-                                  Text('Login com Facebook em desenvolvimento'),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                  Center(
+                    child: _SocialLoginButton(
+                      icon: Icons.g_mobiledata,
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content:
+                                Text('Login com Google em desenvolvimento'),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                   const SizedBox(height: 24),
 
