@@ -36,6 +36,10 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.login(_emailController.text, _passwordController.text);
+
+      if (mounted && authProvider.isAuthenticated) {
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -41,12 +41,10 @@ class _VerificationPageState extends State<VerificationPage> {
       final isValid = authProvider.verifyCode(_codeController.text);
 
       if (isValid) {
-        await authProvider.login(widget.email, widget.password);
+        await authProvider.completeRegistration();
         if (mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const LoginPage()),
-            (route) => false,
-          );
+          Navigator.of(context)
+              .pushNamedAndRemoveUntil('/home', (route) => false);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Conta criada com sucesso!'),
