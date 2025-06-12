@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 
 class RastreiaLogo extends StatelessWidget {
   final double size;
-  final Color? color;
+  final Color color;
 
   const RastreiaLogo({
     Key? key,
     this.size = 40,
-    this.color,
+    this.color = Colors.white,
   }) : super(key: key);
 
   @override
@@ -18,7 +17,7 @@ class RastreiaLogo extends StatelessWidget {
       style: TextStyle(
         fontSize: size,
         fontWeight: FontWeight.bold,
-        color: color ?? AppColors.primary,
+        color: color,
         letterSpacing: 2,
       ),
     );
