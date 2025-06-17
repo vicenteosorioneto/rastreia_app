@@ -58,6 +58,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: true,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,

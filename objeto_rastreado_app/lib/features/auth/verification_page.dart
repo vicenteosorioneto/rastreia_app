@@ -42,8 +42,7 @@ class _VerificationPageState extends State<VerificationPage> {
 
       if (isValid) {
         if (mounted) {
-          Navigator.of(context)
-              .pushNamedAndRemoveUntil('/home', (route) => false);
+          Navigator.of(context).pushReplacementNamed('/objects');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Conta criada com sucesso!'),
@@ -105,8 +104,11 @@ class _VerificationPageState extends State<VerificationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Verificação'),
         backgroundColor: AppColors.primary,
+        elevation: 0,
+        automaticallyImplyLeading: true,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('Verificação', style: TextStyle(color: Colors.white)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

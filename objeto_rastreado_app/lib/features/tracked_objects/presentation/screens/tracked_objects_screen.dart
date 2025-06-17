@@ -56,6 +56,7 @@ class _TrackedObjectsScreenState extends State<TrackedObjectsScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        automaticallyImplyLeading: true,
         title: const Text('Objetos Rastreados',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         actions: [
