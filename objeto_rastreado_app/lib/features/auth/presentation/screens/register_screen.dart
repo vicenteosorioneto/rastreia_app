@@ -1,54 +1,55 @@
 import 'package:flutter/material.dart';
-import '../../core/widgets/rastreia_logo.dart';
+import 'package:provider/provider.dart';
+import '../../../../core/providers/auth_provider.dart';
 
-class ResetPasswordPage extends StatefulWidget {
-  final String email;
-
-  const ResetPasswordPage({
-    Key? key,
-    required this.email,
-  }) : super(key: key);
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<ResetPasswordPage> createState() => _ResetPasswordPageState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _ResetPasswordPageState extends State<ResetPasswordPage> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  bool _isPasswordVisible = false;
-  bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
 
   @override
   void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleResetPassword() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+  Future<void> _register() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      try {
-        // Simulando chamada de API
-        await Future.delayed(const Duration(seconds: 2));
+    setState(() => _isLoading = true);
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Senha alterada com sucesso!'),
-              backgroundColor: Colors.green,
-            ),
+    try {
+      await context.read<AuthProvider>().signUp(
+            name: _nameController.text,
+            email: _emailController.text,
+            password: _passwordController.text,
           );
-          Navigator.of(context).pop(true); // Sucesso
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/objects');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao criar conta: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -83,12 +84,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                         CircleAvatar(
                           radius: 40,
                           backgroundColor: Colors.white,
-                          child: Icon(Icons.lock_reset,
+                          child: Icon(Icons.person_add,
                               size: 48, color: Color(0xFF1976D2)),
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Nova Senha',
+                          'Criar Conta',
                           style: theme.textTheme.headlineMedium?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -98,55 +99,72 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       ],
                     ),
                   ),
-                  Text(
-                    'Digite sua nova senha',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: Colors.white,
+                  TextFormField(
+                    controller: _nameController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.15),
+                      labelText: 'Nome',
+                      labelStyle: const TextStyle(color: Colors.white),
+                      prefixIcon: const Icon(Icons.person, color: Colors.white),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor, insira seu nome';
+                      }
+                      return null;
+                    },
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    widget.email,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _emailController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.15),
+                      labelText: 'Email',
+                      labelStyle: const TextStyle(color: Colors.white),
+                      prefixIcon: const Icon(Icons.email, color: Colors.white),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor, insira seu email';
+                      }
+                      if (!value.contains('@')) {
+                        return 'Por favor, insira um email válido';
+                      }
+                      return null;
+                    },
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _passwordController,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.15),
-                      labelText: 'Nova Senha',
+                      labelText: 'Senha',
                       labelStyle: const TextStyle(color: Colors.white),
-                      prefixIcon:
-                          const Icon(Icons.lock_outline, color: Colors.white),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _isPasswordVisible
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _isPasswordVisible = !_isPasswordVisible;
-                          });
-                        },
-                      ),
+                      prefixIcon: const Icon(Icons.lock, color: Colors.white),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
                     ),
-                    obscureText: !_isPasswordVisible,
+                    obscureText: true,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Por favor, insira uma senha';
+                        return 'Por favor, insira sua senha';
                       }
                       if (value.length < 6) {
                         return 'A senha deve ter pelo menos 6 caracteres';
@@ -161,30 +179,16 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.15),
-                      labelText: 'Confirmar Nova Senha',
+                      labelText: 'Confirmar Senha',
                       labelStyle: const TextStyle(color: Colors.white),
                       prefixIcon:
                           const Icon(Icons.lock_outline, color: Colors.white),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _isConfirmPasswordVisible
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _isConfirmPasswordVisible =
-                                !_isConfirmPasswordVisible;
-                          });
-                        },
-                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
                     ),
-                    obscureText: !_isConfirmPasswordVisible,
+                    obscureText: true,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Por favor, confirme sua senha';
@@ -209,31 +213,33 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                         ),
                         elevation: 4,
                       ),
-                      onPressed: _isLoading ? null : _handleResetPassword,
+                      onPressed: _isLoading ? null : _register,
                       child: _isLoading
                           ? const SizedBox(
-                              height: 24,
                               width: 24,
+                              height: 24,
                               child: CircularProgressIndicator(
                                 strokeWidth: 3,
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                     Color(0xFF1976D2)),
                               ),
                             )
-                          : const Text('Salvar Nova Senha'),
+                          : const Text('Cadastrar'),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      const Text(
+                        'Já tem uma conta?',
+                        style: TextStyle(color: Colors.white),
+                      ),
                       TextButton(
-                        onPressed: _isLoading
-                            ? null
-                            : () => Navigator.of(context)
-                                .pushReplacementNamed('/login'),
+                        onPressed:
+                            _isLoading ? null : () => Navigator.pop(context),
                         child: const Text(
-                          'Voltar para o login',
+                          'Faça login',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,

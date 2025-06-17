@@ -41,7 +41,6 @@ class _VerificationPageState extends State<VerificationPage> {
       final isValid = authProvider.verifyCode(_codeController.text);
 
       if (isValid) {
-        await authProvider.completeRegistration();
         if (mounted) {
           Navigator.of(context)
               .pushNamedAndRemoveUntil('/home', (route) => false);

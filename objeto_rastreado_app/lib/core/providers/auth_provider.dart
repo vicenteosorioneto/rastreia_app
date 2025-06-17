@@ -1,94 +1,115 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_type.dart';
+import 'package:flutter/foundation.dart';
 
-class AuthProvider extends ChangeNotifier {
+class AuthProvider with ChangeNotifier {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  User? _user;
+  bool _isLoading = false;
+  String? _error;
   bool _isAuthenticated = false;
   String? _userEmail;
   String? _userName;
   UserType? _userType;
   final String _verificationCode = '123456';
   DateTime? _lastCodeSentTime;
-  bool _isLoading = false;
 
-  bool get isAuthenticated => _isAuthenticated;
+  AuthProvider() {
+    _auth.authStateChanges().listen((User? user) {
+      _user = user;
+      notifyListeners();
+    });
+  }
+
+  User? get currentUser => _user;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+  bool get isAuthenticated => _user != null;
   String? get userEmail => _userEmail;
   String? get userName => _userName;
   UserType? get userType => _userType;
   DateTime? get lastCodeSentTime => _lastCodeSentTime;
-  bool get isLoading => _isLoading;
 
-  // Construtor que verifica se há um usuário salvo
-  AuthProvider() {
-    _checkSavedUser();
-  }
-
-  Future<void> _checkSavedUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    _userEmail = prefs.getString('user_email');
-    _userName = prefs.getString('user_name');
-    final userTypeString = prefs.getString('user_type');
-    if (userTypeString != null) {
-      _userType = UserType.values.firstWhere(
-        (type) => type.toString() == userTypeString,
-      );
-    }
-    _isAuthenticated = _userEmail != null;
-    notifyListeners();
-  }
-
-  Future<void> login(String email, String password) async {
-    _isLoading = true;
-    notifyListeners();
-
+  Future<void> signIn({required String email, required String password}) async {
+    _setLoading(true);
     try {
-      // Simulação de login
-      await Future.delayed(const Duration(seconds: 1));
-      _userEmail = email;
-      _isAuthenticated = true;
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
 
-      // TODO: Buscar dados do usuário do backend
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isAuthenticated', true);
-      await prefs.setString('user_email', email);
+  Future<void> signUp({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    _setLoading(true);
+    try {
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-      // Recuperar tipo de usuário salvo
-      final userTypeString = prefs.getString('user_type');
-      if (userTypeString != null) {
-        _userType = UserType.values.firstWhere(
-          (type) => type.toString() == userTypeString,
-        );
+      if (userCredential.user != null) {
+        await _firestore.collection('users').doc(userCredential.user!.uid).set({
+          'name': name,
+          'email': email,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
       }
 
-      // Recuperar nome do usuário
-      _userName = prefs.getString('user_name');
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
+      rethrow;
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _setLoading(false);
     }
   }
 
-  Future<void> logout() async {
-    _isLoading = true;
-    notifyListeners();
-
+  Future<void> signOut() async {
+    _setLoading(true);
     try {
-      _isAuthenticated = false;
-      _userEmail = null;
-      _userName = null;
-      _userType = null;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
+      await _auth.signOut();
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
+      rethrow;
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _setLoading(false);
     }
   }
 
-  Future<void> checkAuthStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    _isAuthenticated = prefs.getBool('isAuthenticated') ?? false;
-    _userEmail = prefs.getString('userEmail');
+  void _setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
+  }
+
+  Future<void> _checkCurrentUser() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      _userEmail = user.email;
+      _isAuthenticated = true;
+
+      // Buscar dados adicionais do usuário no Firestore
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (userDoc.exists) {
+        final data = userDoc.data()!;
+        _userName = data['name'];
+        _userType = UserType.values.firstWhere(
+          (type) => type.toString() == data['userType'],
+        );
+      }
+    }
     notifyListeners();
   }
 
@@ -114,8 +135,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Simulação de reset de senha
-      await Future.delayed(const Duration(seconds: 1));
+      await _auth.sendPasswordResetEmail(email: email);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -135,95 +155,32 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _userEmail = email;
-      _userName = name;
-      _userType = userType;
+      // Criar usuário no Firebase Auth
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-      // Salvar dados temporariamente
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('temp_email', email);
-      await prefs.setString('temp_name', name);
-      await prefs.setString('temp_cpf', cpf);
-      await prefs.setString('temp_user_type', userType.toString());
-      if (matricula != null) {
-        await prefs.setString('temp_matricula', matricula);
-      }
-      if (unidade != null) {
-        await prefs.setString('temp_unidade', unidade);
-      }
-
-      await Future.delayed(const Duration(seconds: 1));
-      return true;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<bool> completeRegistration() async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      await Future.delayed(const Duration(seconds: 1));
-
-      final prefs = await SharedPreferences.getInstance();
-
-      // Mover dados temporários para permanentes
-      final email = prefs.getString('temp_email');
-      final name = prefs.getString('temp_name');
-      final userTypeString = prefs.getString('temp_user_type');
-
-      if (email != null && name != null && userTypeString != null) {
-        await prefs.setString('user_email', email);
-        await prefs.setString('user_name', name);
-        await prefs.setString('user_type', userTypeString);
+      if (userCredential.user != null) {
+        // Salvar dados adicionais no Firestore
+        await _firestore.collection('users').doc(userCredential.user!.uid).set({
+          'name': name,
+          'email': email,
+          'cpf': cpf,
+          'userType': userType.toString(),
+          'matricula': matricula,
+          'unidade': unidade,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
 
         _userEmail = email;
         _userName = name;
-        _userType = UserType.values.firstWhere(
-          (type) => type.toString() == userTypeString,
-        );
-        _isAuthenticated = true;
-
-        // Limpar dados temporários
-        await prefs.remove('temp_email');
-        await prefs.remove('temp_name');
-        await prefs.remove('temp_cpf');
-        await prefs.remove('temp_user_type');
-        await prefs.remove('temp_matricula');
-        await prefs.remove('temp_unidade');
-
+        _userType = userType;
         return true;
       }
       return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<bool> startPasswordReset(String email) async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      _userEmail = email;
-      await Future.delayed(const Duration(seconds: 1));
-      return true;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<bool> completePasswordReset(String newPassword) async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      await Future.delayed(const Duration(seconds: 1));
-      return true;
+    } catch (e) {
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
